@@ -1,0 +1,40 @@
+[package]
+name = "home-automation"
+version = "1.0.0"
+authors = ["FELGO GmbH <contact@felgo.com>"]
+edition = "2021"
+
+build = "slint-build.rs"
+
+[dependencies]
+chrono = "0.4.38"
+slint = { version = "1.7", features = ["backend-android-activity-06"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.7"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+
+[build-dependencies]
+slint-build = "1.7"
+
+# Android-activity / wasm support
+[lib]
+name = "home_automation_lib"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+# Andoroid settings
+# See more: https://github.com/rust-mobile/cargo-apk?tab=readme-ov-file#manifest
+[package.metadata.android]
+package = "com.felgo.demos.homeautomation"
+resources = "android-res"
+build_targets = [ "aarch64-linux-android" ]
+
+[package.metadata.android.sdk]
+min_sdk_version = 29
+target_sdk_version = 32
+
+[package.metadata.android.application]
+label = "Home Automation"
+icon = "@mipmap/ic_launcher"

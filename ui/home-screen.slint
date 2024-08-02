@@ -1,0 +1,178 @@
+import { WindowInfo } from "ui_utils.slint";
+import { AppPalette } from "style/styles.slint";
+import { TilesGrid } from "tiles/tiles-grid.slint";
+import { BlindsController, LightsController } from "tiles/tiles-controllers.slint";
+import { AllBlindsTile, AllLightTile, BlindsTile, DateTimeTile, LightTile,
+         LockerTile, TitleTile, TemperatureTile, VideoTile, WeatherTile } from "tiles/tiles.slint";
+
+component HomeGrid inherits TilesGrid {
+    callback temperature-changed <=> temperature-tile.temperature-changed;
+    callback show-video <=> video-tile.show-video;
+
+    columns: WindowInfo.is-portrait ? 2 : 6;
+    rows: WindowInfo.is-portrait ? 9 : 4;
+
+    // GLOBAL
+    // temperature
+    temperature-tile := TemperatureTile {
+        grid-row: 0;
+        grid-col: 0;
+    }
+
+    // date-time
+    DateTimeTile {
+        grid-row: 0;
+        grid-col: 1;
+    }
+
+    // weather
+    WeatherTile {
+        grid-row: WindowInfo.is-portrait ? 1 : 0;
+        grid-col: WindowInfo.is-portrait ? 0 : 2;
+
+        shape: WindowInfo.is-portrait ? rect : double-rect;
+    }
+
+    // SECURITY
+    TitleTile {
+        grid-row: WindowInfo.is-portrait ? 2 : 1;
+        grid-col: 0;
+
+        filling: quarter;
+        name: @tr("SECURITY");
+    }
+
+    // door lock
+    LockerTile {
+        grid-row: WindowInfo.is-portrait ? 2 : 1;
+        grid-col: 0;
+
+        shape: rect;
+        filling: three-quarters;
+        position: bottom;
+
+        name: @tr("Main entry");
+    }
+
+    // video cam
+    video-tile := VideoTile {
+        grid-row: WindowInfo.is-portrait ? 3 : 2;
+        grid-col: 0;
+
+        shape: rect;
+        filling: WindowInfo.is-portrait ? regular : double;
+    }
+
+    // LIGHTS
+    TitleTile {
+        grid-row: WindowInfo.is-portrait ? 4 : 1;
+        grid-col: WindowInfo.is-portrait ? 0 : 2;
+
+        filling: quarter;
+        name: @tr("LIGHTS");
+    }
+
+    // all lights
+    AllLightTile {
+        grid-row: WindowInfo.is-portrait ? 4 : 1;
+        grid-col: WindowInfo.is-portrait ? 0 : 2;
+
+        filling: three-quarters;
+        position: bottom;
+
+        on: LightsController.all;
+        on-count: LightsController.on-count;
+
+        state-change-request(on) => { LightsController.change-all(on); }
+    }
+
+    // lights
+    LightTile {
+        grid-row: WindowInfo.is-portrait ? 5 : 2;
+        grid-col: WindowInfo.is-portrait ? 0 : 2;
+
+        name: @tr("Entry");
+        on: LightsController.entry;
+        state-change-request(on) => { LightsController.entry = on; }
+    }
+    LightTile {
+        grid-row: WindowInfo.is-portrait ? 5 : 2;
+        grid-col: WindowInfo.is-portrait ? 1 : 3;
+
+        name: @tr("Living room");
+        on: LightsController.livingroom;
+        state-change-request(on) => { LightsController.livingroom = on; }
+    }
+    LightTile {
+        grid-row: WindowInfo.is-portrait ? 6 : 3;
+        grid-col: WindowInfo.is-portrait ? 0 : 2;
+
+        name: @tr("Kitchen");
+        on: LightsController.kitchen;
+        state-change-request(on) => { LightsController.kitchen = on; }
+    }
+    LightTile {
+        grid-row: WindowInfo.is-portrait ? 6 : 3;
+        grid-col: WindowInfo.is-portrait ? 1 : 3;
+
+        name: @tr("Bedroom");
+        on: LightsController.bedroom;
+        state-change-request(on) => { LightsController.bedroom = on; }
+    }
+
+    // BLINDS
+    TitleTile {
+        grid-row: WindowInfo.is-portrait ? 7 : 1;
+        grid-col: WindowInfo.is-portrait ? 0 : 4;
+
+        filling: quarter;
+        name: @tr("BLINDS");
+    }
+
+    // all blinds
+    AllBlindsTile {
+        grid-row: WindowInfo.is-portrait ? 7 : 1;
+        grid-col: WindowInfo.is-portrait ? 0 : 4;
+
+        filling: three-quarters;
+        position: bottom;
+
+        on: BlindsController.all;
+        on-count: BlindsController.on-count;
+
+        state-change-request(on) => { BlindsController.change-all(on); }
+    }
+
+    // lights
+    BlindsTile {
+        grid-row: WindowInfo.is-portrait ? 8 : 2;
+        grid-col: WindowInfo.is-portrait ? 0 : 4;
+
+        name: @tr("Downstairs");
+        on: BlindsController.downstairs;
+        state-change-request(on) => { BlindsController.downstairs = on; }
+    }
+    BlindsTile {
+        grid-row: WindowInfo.is-portrait ? 8 : 2;
+        grid-col: WindowInfo.is-portrait ? 1 : 5;
+
+        name: @tr("Upstairs");
+        on: BlindsController.upstairs;
+        state-change-request(on) => { BlindsController.upstairs = on; }
+    }
+}
+
+export component HomeScreen inherits Rectangle {
+    callback temperature-changed <=> home-grid.temperature-changed;
+    callback show-video <=> home-grid.show-video;
+
+    background: AppPalette.background;
+
+    Flickable {
+        viewport-height: home-grid.preferred-height;
+
+        home-grid := HomeGrid {
+            width: parent.width;
+        }
+    }
+}

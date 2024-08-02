@@ -1,0 +1,101 @@
+import { AppPalette } from "../style/styles.slint";
+
+export enum TileShape { square, rect, double-rect }
+export enum TileFilling { quarter, half, three-quarters, regular, double }
+export enum TilePosition { top, bottom }
+
+export global TilesGridInfo {
+    in-out property<length> tile-size;
+    in-out property<length> spacing: 5px;
+}
+
+export component TilesGrid {
+    in property<int> columns;
+    in property<int> rows;
+
+    out property<length> tile-size: (root.width / root.columns);
+    
+    changed tile-size => {
+        TilesGridInfo.tile-size = self.tile-size;
+    }
+
+    preferred-height: root.rows * root.tile-size;
+    
+    @children
+}
+
+export component BaseTile {
+    in property <TileShape> shape: square;
+    in property <TileFilling> filling: regular;
+    in property <TilePosition> position: top;
+
+    in property <int> grid-row;
+    in property <int> grid-col;
+
+    in property <brush> background <=> content.background;
+
+    in-out property <length> size: TilesGridInfo.tile-size; // TODO: make out
+
+    out property <length> height-shift: {
+        if (root.position == TilePosition.bottom) {
+            if (root.filling == TileFilling.regular) {
+                return root.size;
+            }
+            if (root.filling == TileFilling.three-quarters) {
+                return 25% * root.size;
+            }
+            if (root.filling == TileFilling.half) {
+                return 50% * root.size;
+            }
+            if (root.filling == TileFilling.quarter) {
+                return 75% * root.size;
+            }
+        }
+
+        return 0;
+    }
+
+    padding: 10px;
+    padding-top: self.padding;
+    padding-bottom: self.padding;
+    padding-left: self.padding;
+    padding-right: self.padding;
+
+    x: root.grid-col * root.size;
+    y: root.grid-row * root.size + root.height-shift;
+
+    width: {
+        if (root.shape == TileShape.rect) {
+            return 2 * root.size;
+        }
+        if (root.shape == TileShape.double-rect) {
+            return 4 * root.size;
+        }
+
+        return root.size;
+    };
+    height: {
+        if (root.filling == TileFilling.double) {
+            return 200% * root.size;
+        }
+        if (root.filling == TileFilling.three-quarters) {
+            return 75% * root.size;
+        }
+        if (root.filling == TileFilling.half) {
+            return 50% * root.size;
+        }
+        if (root.filling == TileFilling.quarter) {
+            return 25% * root.size;
+        }
+
+        return root.size;
+    };
+
+    content := Rectangle {
+        width: parent.width - TilesGridInfo.spacing;
+        height: parent.height - TilesGridInfo.spacing;
+        background: AppPalette.alternate-background;
+
+        @children
+    }
+}

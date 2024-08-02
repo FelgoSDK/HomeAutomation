@@ -1,0 +1,22 @@
+import { Palette } from "std-widgets.slint";
+
+import "../assets/font-awesome.ttf";
+
+export global AppPalette {
+    out property<brush> background: Palette.background;
+    out property<brush> alternate-background: Palette.color-scheme == ColorScheme.dark ?
+        self.background.brighter(25%) : self.background.darker(25%);
+    out property<brush> foreground: Palette.foreground;
+
+    out property<brush> light-yellow: Palette.color-scheme == ColorScheme.dark ? Colors.goldenrod : Colors.gold.brighter(10%);
+    out property<brush> blinds-steel: Palette.color-scheme == ColorScheme.dark ? Colors.silver : Colors.slategrey;
+
+    out property<brush> heating-red: Palette.color-scheme == ColorScheme.dark ? Colors.indianred : Colors.firebrick;
+    out property<brush> cooling-blue: Palette.color-scheme == ColorScheme.dark ? Colors.skyblue : Colors.steelblue;
+}
+
+export global AppFonts {
+    out property<length> default-font-size: 12pt;
+
+    out property<string> icons-font-name: "FontAwesome";
+}

@@ -1,0 +1,49 @@
+import { AppPalette } from "./style/styles.slint";
+import { AboutBox } from "./about-box.slint";
+import { IconText, TitleText, VirtualTouchArea } from "controls/generic.slint";
+
+export component CloseButton inherits Rectangle {
+    callback clicked <=> ta.clicked;
+
+    width: self.preferred-width;
+    height: self.preferred-height;
+
+    preferred-width: layout.preferred-width;
+    preferred-height: layout.preferred-height;
+
+    layout := HorizontalLayout {
+        alignment: start;
+        spacing: 1rem;
+
+        button := IconText {
+            text: "\u{f00d}";
+            font-size: 2.8rem;
+        }
+        TitleText {
+            text: @tr("CLOSE APPLICATION");
+            font-size: 1.2rem;
+        }
+    }
+
+    ta := VirtualTouchArea {
+        real-width: parent.width;
+        real-height: parent.height;
+
+        vertical-position: self.real-height < self.touch-size ? bottom : center;
+    }
+}
+
+export component AboutPage inherits Rectangle {
+    callback close-request();
+
+    background: AppPalette.alternate-background;
+
+    AboutBox {}
+
+    CloseButton {
+        x: 0;
+        y: parent.height - self.height;
+
+        clicked => { root.close-request() }
+    }
+}

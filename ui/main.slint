@@ -1,0 +1,193 @@
+import { AppPalette, AppFonts } from "./style/styles.slint";
+import { StackView, StackPage } from "./controls/stackview.slint";
+import { IconButton, IconText, TitleText } from "./controls/generic.slint";
+import { HomeScreen } from "./home-screen.slint";
+import { AboutPage } from "./about-page.slint";
+
+import { DateTimeController, TemperatureController, WeatherController } from "tiles/tiles-controllers.slint";
+import { WindowInfo, WindowInfoHelper } from "./ui_utils.slint";
+
+// Re export for native code
+export { WindowInfo }
+export { DateTimeController, TemperatureController, WeatherController }
+
+component AnimatedStackPage inherits StackPage {
+    // is-active and is-opened are not set as a binding here, only when the value is actually changed.
+    // This is to avoid redundant reevaluation of dependent properties and conditional elements.
+    // see: https://github.com/slint-ui/slint/issues/5209
+    out property<bool> is-active: false;
+    out property<bool> is-opened: false;
+
+    // using a helper int property to be able to use animate
+    property<int> is-active-value: 0;
+
+    property<duration> animation-duration: 250ms;
+
+    visible: root.is-active;
+
+    init => { root.is-active = (root.is-active_value == 1); }
+    changed is-active-value => { root.is-active = (self.is-active_value == 1); }
+
+    states [
+        active when self.is-current: {
+            is-active-value: 1;
+
+            out {
+                animate is-active-value { delay: root.animation-duration; }
+            }
+        }
+    ]
+
+    content := Rectangle {
+        changed y => {
+            // First open animation is not working properly without the line below. (A bug?)
+            // Seems the animation in transition is using old values,
+            // and accessing the property somehow forces the update.
+            // see: https://github.com/slint-ui/slint/issues/5426
+            self.y;
+
+            if (root.is-opened != (self.y == 0)) {
+                root.is-opened = (self.y == 0);
+            }
+        }
+
+        y: root.is-current ? 0px : root.height;
+        animate y { duration: root.animation-duration; easing: ease-in-out-quad; }
+
+        @children
+    }
+}
+
+enum PageType {
+    Home,
+    About,
+    Video
+}
+
+export component AppWindow inherits Window {
+    callback close-request();
+    callback temperature-changed();
+
+    preferred-width: 1280px;
+    preferred-height: 720px;
+
+    default-font-size: AppFonts.default-font-size;
+
+    WindowInfoHelper {}
+
+    VerticalLayout {
+        TitleText {
+            text: "OUR HOME";
+            font-size: 1.85rem;
+
+            // move above the stack page to keep virtual touch areas available
+            z: 1;
+
+            // left (back) icon
+            IconButton {
+                text: "\u{f053}";
+                font-size: 2rem;
+                visible: stack.current-index > 0;
+
+                padding-left: 10px;
+                x: self.padding-left;
+                width: self.preferred-width;
+
+                touch-vertical-position: top;
+                touch-horizontal-position: left;
+                touch-x-max-offset: self.padding-left;
+                touch-y-max-offset: self.y;
+
+                clicked => { stack.back-to-home(); }
+            }
+
+            // right (about) icon
+            IconButton {
+                text: "\u{f05a}";
+                font-size: 2.2rem;
+                visible: stack.current-index == 0;
+
+                padding-right: 10px;
+                x: parent.width - self.preferred-width - self.padding-right;
+                width: self.preferred-width;
+
+                touch-vertical-position: top;
+                touch-horizontal-position: right;
+                touch-x-max-offset: self.padding-right;
+                touch-y-max-offset: self.y;
+
+                clicked => { stack.show-page(PageType.About); }
+            }
+        }
+
+        stack := StackView {
+            function show-page(pageType : PageType) {
+                if (pageType == PageType.Home) {
+                    self.current-index = 0;
+                }
+                else if (pageType == PageType.About) {
+                    self.current-index = 1;
+                }
+                else if (pageType == PageType.Video) {
+                    self.current-index = 2;
+                }
+            }
+
+            function back-to-home() {
+                self.show-page(PageType.Home);
+            }
+
+            current-index: 0;
+            min-index: 0;
+            count: 3;
+
+            StackPage {
+                is-current: self.check-is-current(stack.current-index);
+                page-index: 0;
+                visible: true;
+
+                HomeScreen {
+                    show-video => { stack.show-page(PageType.Video); }
+                    temperature-changed => { root.temperature-changed(); }
+                }
+            }
+
+            AnimatedStackPage {
+                is-current: self.check-is-current(stack.current-index);
+                page-index: 1;
+
+                AboutPage {
+                    close-request() => { root.close-request(); }
+                }
+            }
+
+            AnimatedStackPage {
+                is-current: self.check-is-current(stack.current-index);
+                page-index: 2;
+
+                Rectangle {
+                    background: AppPalette.alternate-background;
+                    clip: true;
+
+                    Image {
+                        width: parent.width;
+                        height: parent.height;
+
+                        source: @image-url("./assets/video-output.jpg");
+                        image-fit: contain;
+                    }
+
+                    IconText {
+                        x: 15px;
+                        y: 15px;
+                        width: self.preferred-width;
+                        height: self.preferred-height;
+
+                        font-size: 3rem;
+                        text: "\u{f03d}";
+                    }
+                }
+            }
+        }
+    }
+}
