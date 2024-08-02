@@ -1,0 +1,80 @@
+import { AppFonts, AppPalette } from "../style/styles.slint";
+
+export component AppText inherits Text {
+    color: AppPalette.foreground;
+    overflow: elide;
+}
+
+export component TitleText inherits AppText {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+
+    horizontal-alignment: center;
+    vertical-alignment: center;
+}
+
+export component IconText inherits Text {
+    font-family: AppFonts.icons-font-name;
+    color: AppPalette.foreground;
+
+    horizontal-alignment: center;
+    vertical-alignment: center;
+}
+
+enum VerticalPosition { top, center, bottom }
+enum HorizontalPosition { left, center, right }
+
+export component VirtualTouchArea inherits TouchArea {
+    out property <length> touch-size: 48px;
+
+    in property <HorizontalPosition> horizontal-position: center;
+    in property <VerticalPosition> vertical-position: center;
+
+    in property <length> x-max-offset;
+    in property <length> y-max-offset;
+
+    in property <length> real-width;
+    in property <length> real-height;
+
+    width: Math.max(root.touch-size, root.real-width);
+    height: Math.max(root.touch-size, root.real-height);
+
+    x: {
+        if (root.horizontal-position == HorizontalPosition.left) {
+            return Math.max(-root.x-max-offset, root.real-width - root.width);
+        }
+        else if (root.horizontal-position == HorizontalPosition.right) {
+            return Math.min(root.width - root.real-width, root.real-width - root.width + root.x-max-offset);
+        }
+        return (root.real-width - root.width) / 2;
+    }
+    y: {
+        if (root.vertical-position == VerticalPosition.top) {
+            return Math.max(-root.y-max-offset, root.real-height - root.height);
+        }
+        else if (root.vertical-position == VerticalPosition.bottom) {
+            return Math.min(root.height - root.real-height, root.real-height - root.height + root.y-max-offset);
+        }
+        return (root.real-height - root.height) / 2;
+    }
+}
+
+export component IconButton inherits IconText {
+    in property enabled <=> ta.enabled;
+
+    in property touch-horizontal-position <=> ta.horizontal-position;
+    in property touch-vertical-position <=> ta.vertical-position;
+
+    in property touch-x-max-offset <=> ta.x-max-offset;
+    in property touch-y-max-offset <=> ta.y-max-offset;
+
+    out property touch-size <=> ta.touch-size;
+
+    callback clicked <=> ta.clicked;
+
+    ta := VirtualTouchArea {
+        real-width: parent.width;
+        real-height: parent.height;
+    }
+}

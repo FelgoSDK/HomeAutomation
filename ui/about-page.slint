@@ -1,0 +1,11 @@
+import { AppPalette } from "./style/styles.slint";
+import { AboutBox } from "./about-box.slint";
+import { IconText, TitleText, VirtualTouchArea } from "controls/generic.slint";
+
+export component AboutPage inherits Rectangle {
+    callback close-request();
+
+    background: AppPalette.alternate-background;
+
+    AboutBox {}
+}

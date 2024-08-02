@@ -1,0 +1,459 @@
+import { AppPalette } from "../style/styles.slint";
+import { AppText, IconButton, IconText, TitleText } from "../controls/generic.slint";
+import { LightBulb, Blinds } from "../controls/automation.slint";
+import { BaseTile, TileShape } from "tiles-grid.slint";
+import { DateTimeController, TemperatureController, LockerController, WeatherController } from "tiles-controllers.slint";
+
+component TileText inherits AppText {
+    horizontal-alignment: center;
+    vertical-alignment: center;
+}
+
+export component TitleTile inherits BaseTile {
+    in property<string> name <=> text.text;
+
+    shape: rect;
+    background: AppPalette.background;
+
+    text := TitleText {
+        width: 100%;
+        height: 100%;
+
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+    }
+}
+
+component Tile inherits BaseTile {
+    Rectangle {
+        width: parent.width - parent.padding-left - parent.padding-right;
+        height: parent.height - parent.padding-top - parent.padding-bottom;
+
+        clip: true;
+
+        @children
+    }
+}
+
+export component DateTimeTile inherits Tile {
+    VerticalLayout {
+        alignment: center;
+        spacing: 10% * root.size;
+
+        HorizontalLayout {
+            IconText {
+                font-size: 18% * root.size;
+                text: "\u{f133}";
+            }
+            TileText {
+                font-size: 13% * root.size;
+                text: DateTimeController.date;
+            }
+        }
+
+        HorizontalLayout {
+            IconText {
+                font-size: 27% * root.size;
+                text: "\u{f017}";
+            }
+            TileText {
+                font-size: 18% * root.size;
+                text: DateTimeController.time;
+            }
+        }
+    }
+}
+
+export component TemperatureTile inherits Tile {
+    property <int> temperature: TemperatureController.temperature;
+    property <int> now-temperature: TemperatureController.now-temperature;
+    property <bool> heating: (root.temperature > root.now-temperature);
+    property <bool> cooling: (root.temperature < root.now-temperature);
+
+    property <bool> can-increase: root.temperature < TemperatureController.max-temperature;
+    property <bool> can-decrease: root.temperature > TemperatureController.min-temperature;
+
+    function increase() { TemperatureController.temperature += 1; }
+    function decrease() { TemperatureController.temperature -= 1; }
+    function set-default() { TemperatureController.temperature = TemperatureController.default-temperature; }
+
+    callback temperature-changed();
+
+    main-layout := VerticalLayout {
+        alignment: center;
+        spacing: 10% * root.size;
+
+        HorizontalLayout {
+            alignment: center;
+            spacing: 2% * root.size;
+
+            IconText {
+                font-size: 30% * root.size;
+                text: "\u{f2c8}";
+
+                color: AppPalette.foreground;
+
+                states [
+                    heating when root.heating: {
+                        color: AppPalette.heating-red;
+
+                        in { animate color { duration: 350ms; easing: ease-in-out; } }
+                        out { animate color { duration: 350ms; easing: ease-in-out; } }
+                    }
+                    cooling when root.cooling: {
+                        color: AppPalette.cooling-blue;
+
+                        in { animate color { duration: 350ms; easing: ease-in-out; } }
+                        out { animate color { duration: 350ms; easing: ease-in-out; } }
+                    }
+                ]
+
+                TouchArea {
+                    clicked => {
+                        root.set-default();
+                    }
+                }
+            }
+
+            Rectangle { width: 8% * root.size; } // spacing
+
+            TileText {
+                horizontal-stretch: 1;
+                font-size: 20% * root.size;
+                horizontal-alignment: right;
+                text: "\{root.temperature}°";
+            }
+
+            icons-layout := VerticalLayout {
+                alignment: center;
+                spacing: 5% * root.size;
+
+                IconButton {
+                    font-size: 15% * root.size;
+                    text: "\u{f077}";
+
+                    opacity: root.can-increase ? 100% : 50%;
+
+                    touch-vertical-position: bottom;
+                    touch-y-max-offset: icons-layout.spacing / 2;
+
+                    touch-horizontal-position: self.width / 2 + self.touch-x-max-offset > self.touch-size / 2 ? center : right;
+                    touch-x-max-offset: main-layout.width - parent.x - parent.width;
+
+                    enabled: root.can-increase;
+                    clicked => {
+                        root.increase();
+                        root.temperature-changed();
+                    }
+                }
+
+                IconButton {
+                    font-size: 15% * root.size;
+                    text: "\u{f078}";
+
+                    opacity: root.can-decrease ? 100% : 50%;
+
+                    touch-vertical-position: top;
+                    touch-y-max-offset: icons-layout.spacing / 2;
+
+                    touch-horizontal-position: self.width / 2 + self.touch-x-max-offset > self.touch-size / 2 ? center : right;
+                    touch-x-max-offset: main-layout.width - parent.x - parent.width;
+
+                    enabled: root.can-decrease;
+                    clicked => {
+                        root.decrease();
+                        root.temperature-changed();
+                    }
+                }
+            }
+        }
+
+        TileText {
+            font-size: 10% * root.size;
+            text: "Now: \{root.now-temperature}°";
+        }
+    }
+}
+
+export component VideoTile inherits BaseTile {
+    callback show-video();
+
+    Image {
+        width: 100%;
+        height: 100%;
+
+        source: @image-url("../assets/video-output.jpg");
+        image-fit: cover;
+
+        IconText {
+            x: 3% * root.size;
+            y: 2% * root.size;
+
+            font-size: Math.max(30px, 10% * Math.min(parent.width, parent.height));
+            text: "\u{f03d}";
+        }
+    }
+
+    TouchArea {
+        clicked => { root.show-video(); }
+    }
+}
+
+component StateTileBase inherits Tile {
+    in property <bool> on: false;
+    in property <string> name;
+    in property <string> subtitle;
+    in property <length> max-text-width;
+
+    callback state-change-request(bool);
+
+    VerticalLayout {
+        alignment: center;
+        spacing: 5% * root.size;
+
+        if root.shape == TileShape.square: VerticalLayout {
+            spacing: 1% * root.size;
+
+            TileText {
+                font-size: 13% * root.size;
+                font-weight: 500;
+                text: root.name;
+            }
+            if root.subtitle != "": TileText {
+                font-size: 8% * root.size;
+                font-italic: true;
+                text: root.subtitle;
+            }
+        }
+    
+        HorizontalLayout {
+            spacing: 20% * root.size;
+            alignment: center;
+
+            if root.shape != TileShape.square: VerticalLayout {
+                alignment: center;
+                spacing: 1% * root.size;
+
+                width: root.max-text-width != 0 ? root.max-text-width : self.preferred-width;
+
+                TileText {
+                    font-size: 13% * root.size;
+                    font-weight: 500;
+                    text: root.name;
+                }
+                if root.subtitle != "": TileText {
+                    font-size: 8% * root.size;
+                    font-italic: true;
+                    text: root.subtitle;
+                }
+            }
+        
+            content-rect := Rectangle {
+                @children
+            }
+        }
+    }
+
+    TouchArea {
+        clicked => {
+            root.state-change-request(!root.on);
+        }
+    }
+}
+
+export component LockerTile inherits StateTileBase {
+    property <length> icon-size: 40% * root.size;
+
+    on: LockerController.locked;
+    subtitle: root.on ? @tr("door locked") : @tr("door unlocked");
+
+    content-rect := Rectangle {
+        preferred-height: Math.max(open-icon.height, close-icon.height);
+        preferred-width: Math.max(open-icon.width, close-icon.width);
+        clip: true;
+
+        states [
+            horizontal when root.shape == TileShape.square: {
+                open-icon.y: (content-rect.height - open-icon.height) / 2;
+                close-icon.y: (content-rect.height - close-icon.height) / 2;
+
+                open-icon.x: root.on ? -open-icon.width
+                                     : (content-rect.width - open-icon.width) / 2;
+
+                close-icon.x: root.on ? (content-rect.width - close-icon.width) / 2
+                                      : content-rect.width + close-icon.width;
+            }
+            vertical when root.shape != TileShape.square: {
+                open-icon.x: (content-rect.width - open-icon.width) / 2;
+                close-icon.x: (content-rect.width - close-icon.width) / 2;
+
+                open-icon.y: root.on ? -open-icon.height
+                                     : (content-rect.height - open-icon.height) / 2;
+
+                close-icon.y: root.on ? (content-rect.height - close-icon.height) / 2
+                                      : content-rect.height + close-icon.height;
+            }
+        ]
+
+        close-icon := IconText {
+            animate x, y { duration: 250ms; easing: ease-in-out; }
+
+            font-size: root.icon-size;
+            text: "\u{f023}";
+        }
+        open-icon := IconText {
+            animate x, y { duration: 250ms; easing: ease-in-out; }
+
+            font-size: root.icon-size;
+            text: "\u{f13e}";
+        }
+    }
+
+    state-change-request(on) => {
+        LockerController.locked = on;
+    }
+}
+
+component MultiStateTileBase inherits StateTileBase {
+    in property<int> on-count: 0;
+
+    subtitle: root.on ? @tr("all on") : @tr("{} on", root.on-count);
+}
+
+export component LightTile inherits StateTileBase {
+    LightBulb {
+        preferred-width: 40% * root.size;
+        preferred-height: self.preferred-width;
+        on: root.on;
+    }
+}
+
+export component AllLightTile inherits MultiStateTileBase {
+    name: @tr("All");
+    shape: rect;
+
+    max-text-width: 40% * root.size;
+
+    LightBulb {
+        preferred-width: 40% * root.size;
+        preferred-height: self.preferred-width;
+        on: root.on;
+    }
+}
+
+export component BlindsTile inherits StateTileBase {
+    Blinds {
+        preferred-width: 40% * root.size;
+        preferred-height: self.preferred-width;
+        on: root.on;
+    }
+}
+
+export component AllBlindsTile inherits MultiStateTileBase {
+    name: @tr("All");
+    shape: rect;
+
+    max-text-width: 40% * root.size;
+
+    Blinds {
+        preferred-width: 40% * root.size;
+        preferred-height: self.preferred-width;
+        on: root.on;
+    }
+}
+
+export component WeatherTile inherits BaseTile {
+    Image {
+        width: 100%;
+        height: 100%;
+
+        source: WeatherController.background_url;
+        image-fit: cover;
+
+        Rectangle {
+            background: AppPalette.alternate-background;
+            opacity: 60%;
+        }
+    }
+
+    HorizontalLayout {
+        VerticalLayout {
+            width: root.size;
+
+            alignment: center;
+            spacing: 5% * root.size;
+
+            TileText {
+                font-size: 30% * root.size;
+                text: "\{WeatherController.current_temp}°";
+            }
+            HorizontalLayout {
+                alignment: center;
+                spacing: 5% * root.size;
+
+                IconText {
+                    font-size: 10% * root.size;
+                    font-weight: 900;
+                    text: WeatherController.icon_text;
+                }
+                TileText {
+                    font-size: 10% * root.size;
+                    font-italic: true;
+                    text: "\{WeatherController.description}";
+                }
+            }
+        }
+        if root.shape == TileShape.rect || root.shape == TileShape.double-rect: VerticalLayout {
+            width: root.size;
+
+            alignment: center;
+            spacing: 3% * root.size;
+
+            for weather-data in [
+                { icon: "\u{f2cb}", value: "\{WeatherController.min_temp}°" },
+                { icon: "\u{f2c7}", value: "\{WeatherController.max_temp}°" },
+                { icon: "UV", value: WeatherController.uv },
+                { icon: "\u{f043}", value: "\{WeatherController.precipitation}l" }
+            ]:
+            HorizontalLayout {
+                spacing: 5% * root.size;
+                alignment: center;
+
+                IconText {
+                    width: 25% * root.size;
+                    font-size: 13% * root.size;
+                    font-weight: 900;
+                    text: weather-data.icon;
+                }
+                TileText {
+                    width: 40% * root.size;
+                    font-size: 13% * root.size;
+                    text: "\{weather-data.value}";
+                }
+            }
+        }
+        if root.shape == TileShape.double-rect: HorizontalLayout {
+            width: root.size * 2;
+
+            alignment: center;
+            spacing: 10% * root.size;
+
+            for temperature[index] in WeatherController.forecast:
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 5% * root.size;
+
+                    TileText {
+                        font-size: 12% * root.size;
+                        font-weight: 800;
+                        text: WeatherController.day-name(index + 1);
+                    }
+                    TileText {
+                        font-size: 14% * root.size;
+                        text: "\{temperature}°";
+                    }
+                }
+        }
+    }
+}

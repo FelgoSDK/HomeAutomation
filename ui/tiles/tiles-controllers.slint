@@ -1,0 +1,75 @@
+export global DateTimeController {
+    pure callback provide-date(int) -> string;
+    pure callback provide-time(int) -> string;
+
+    // for running without backend
+    provide-date(requestNumber) => {
+        return "May 21st";
+    }
+    provide-time(requestNumber) => {
+        return "16:43";
+    }
+
+    out property<string> date: self.provide-date(animation-tick() / 5s);
+    out property<string> time: self.provide-time(animation-tick() / 5s);
+}
+
+export global TemperatureController {
+    in-out property<int> max-temperature: 32;
+    in-out property<int> min-temperature: 12;
+    in-out property<int> default-temperature: 21;
+
+    in-out property<int> temperature: 21;
+    in-out property<int> now-temperature: 21;
+}
+
+export global LockerController {
+    in-out property<bool> locked: false;
+}
+
+export global LightsController {
+    in-out property<bool> entry: false;
+    in-out property<bool> livingroom: false;
+    in-out property<bool> kitchen: false;
+    in-out property<bool> bedroom: false;
+
+    out property<bool> all: self.entry && self.livingroom && self.kitchen && self.bedroom;
+    out property<int> on-count: (self.entry ? 1 : 0) +
+                                (self.livingroom ? 1 : 0) +
+                                (self.kitchen ? 1 : 0) +
+                                (self.bedroom ? 1 : 0);
+
+    public function change-all(on: bool) {
+        self.entry = on;
+        self.kitchen = on;
+        self.livingroom = on;
+        self.bedroom = on;
+    }
+}
+
+export global BlindsController {
+    in-out property<bool> downstairs: false;
+    in-out property<bool> upstairs: false;
+
+    out property<bool> all: self.downstairs && self.upstairs;
+    out property<int> on-count: (self.downstairs ? 1 : 0) + (self.upstairs ? 1 : 0);
+
+    public function change-all(on: bool) {
+        self.downstairs = on;
+        self.upstairs = on;
+    }
+}
+
+export global WeatherController {
+    pure callback day-name(int) -> string;
+
+    out property <string> description: @tr("Clear sky");
+    out property <string> icon_text: "\u{f185}";
+    out property <image> background_url: @image-url("../assets/weather-background.jpg");
+    out property <int> current_temp: 30;
+    out property <int> min_temp: 26;
+    out property <int> max_temp: 31;
+    out property <int> uv: 11;
+    out property <float> precipitation: 0.1;
+    out property <[int]> forecast: [ 29, 31, 28, 23, 27 ];
+}

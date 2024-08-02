@@ -1,0 +1,158 @@
+import { AppPalette } from "../style/styles.slint";
+import { IconText } from "./generic.slint";
+
+export component LightBulb {
+    in property<bool> on: false;
+
+    in property<color> on-color: AppPalette.light-yellow;
+    in property<color> off-color: AppPalette.foreground;
+
+    property<length> size: Math.min(self.width, self.height);
+
+    preferred-width: 100%;
+    preferred-height: 100%;
+
+    states [
+        on when root.on: {
+            bulb-icon.color: root.on-color;
+            rays-canvas.opacity: 100%;
+
+            in {
+                animate bulb-icon.color { duration: 500ms; easing: ease-in; }
+                animate rays-canvas.opacity { delay: 350ms; duration: 500ms; easing: ease-in; }
+            }
+            out {
+                animate rays-canvas.opacity { duration: 500ms; easing: ease-out; }
+                animate bulb-icon.color { delay: 350ms; duration: 500ms; easing: ease-out; }
+            }
+        }
+    ]
+
+    Rectangle {
+        width: root.size;
+        height: root.size;
+
+        clip: true;
+
+        bulb-icon := IconText {
+            font-size: root.size * 90%;
+            text: "\u{f0eb}";
+
+            y: (parent.height - self.height) * 125%;
+            color: root.off-color;
+        }
+
+        rays-canvas := Path {
+            property<float> dMax: 50;
+
+            property<float> dI: 37;
+            property<float> dO: 50;
+            property<angle> angle: 360deg / (2 * 6);
+            property<angle> start-angle: -1 * self.angle / 2;
+
+            opacity: 0%;
+
+            y: 0;
+            height: 40% * parent.height;
+            width: 90% * parent.width;
+
+            stroke: root.on-color;
+            stroke-width: Math.max(2px, 3% * root.size);
+
+            MoveTo {
+                x: dMax - dI * Math.cos(start-angle + 1 * angle);
+                y: dMax - dI * Math.sin(start-angle + 1 * angle);
+            }
+            LineTo {
+                x: dMax - dO * Math.cos(start-angle + 1 * angle);
+                y: dMax - dO * Math.sin(start-angle + 1 * angle);
+            }
+
+            MoveTo {
+                x: dMax - dI * Math.cos(start-angle + 2 * angle);
+                y: dMax - dI * Math.sin(start-angle + 2 * angle);
+            }
+            LineTo {
+                x: dMax - dO * Math.cos(start-angle + 2 * angle);
+                y: dMax - dO * Math.sin(start-angle + 2 * angle);
+            }
+
+            MoveTo {
+                x: dMax - dI * Math.cos(start-angle + 3 * angle);
+                y: dMax - dI * Math.sin(start-angle + 3 * angle);
+            }
+            LineTo {
+                x: dMax - dO * Math.cos(start-angle + 3 * angle);
+                y: dMax - dO * Math.sin(start-angle + 3 * angle);
+            }
+
+            MoveTo {
+                x: dMax - dI * Math.cos(start-angle + 4 * angle);
+                y: dMax - dI * Math.sin(start-angle + 4 * angle);
+            }
+            LineTo {
+                x: dMax - dO * Math.cos(start-angle + 4 * angle);
+                y: dMax - dO * Math.sin(start-angle + 4 * angle);
+            }
+
+            MoveTo {
+                x: dMax - dI * Math.cos(start-angle + 5 * angle);
+                y: dMax - dI * Math.sin(start-angle + 5 * angle);
+            }
+            LineTo {
+                x: dMax - dO * Math.cos(start-angle + 5 * angle);
+                y: dMax - dO * Math.sin(start-angle + 5 * angle);
+            }
+
+            MoveTo {
+                x: dMax - dI * Math.cos(start-angle + 6 * angle);
+                y: dMax - dI * Math.sin(start-angle + 6 * angle);
+            }
+            LineTo {
+                x: dMax - dO * Math.cos(start-angle + 6 * angle);
+                y: dMax - dO * Math.sin(start-angle + 6 * angle);
+            }
+        }
+    }
+}
+
+export component Blinds {
+    in property<bool> on: true;
+    in property<int> count: 8;
+
+    in property<color> color: AppPalette.blinds-steel;
+
+    property<length> size: Math.min(self.width, self.height);
+
+    property<length> distance: root.size / self.count;
+    property<length> spacing: 15% * self.distance;
+    property<length> thickness: self.distance - self.spacing;
+
+    property<float> progress: root.on ? 100% : 10%;
+    animate progress { duration: 500ms; easing: ease-in-out-quad; }
+
+    preferred-width: 100%;
+    preferred-height: 100%;
+
+    Rectangle {
+        width: root.size;
+        height: root.size;
+
+        for index in count:
+            Rectangle {
+                width: 100%;
+                height: root.distance - root.spacing;
+
+                y: (index * root.distance) + (root.spacing / 2);
+
+                Rectangle {
+                    background: @linear-gradient(0deg, root.color.darker(30%) 0%,
+                                                    root.color 35%,
+                                                    root.color 65%,
+                                                    root.color.darker(30%) 100%);
+
+                    height: Math.max(1, Math.round(root.thickness * root.progress / 1px)) * 1px;
+                }
+            }
+    }
+}
